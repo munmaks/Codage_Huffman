@@ -153,11 +153,6 @@ static Huffman *huffmanTree(FILE* fptr){
 }
 
 
-
-
-
-/* Codage de Huffman */
-
 static void construit_aux(Noeud *array, char **traduc, char buffer[], int profondeur, int indice) {
     if (array[indice].fg != -1) {
         buffer[profondeur] = '0';
@@ -235,10 +230,6 @@ static void codeHuffmanX8_aux(Huffman *huffman, FileBit *out, int indice){
     if (0 <= indice && indice < huffman->nbLeaves){
         fEcrireBit(out, 1);
         fEcritCharbin(out, huffman->array[indice].lettre);
-
-        /*fprintf(non_bin, "1%c", huffman->array[indice].lettre);*/
-        /*byte_to_binary(huffman->array[indice].lettre)*/
-        /* fEcritCharbin(&f, huffman->array[indice].lettre) */
         return;
     }
 
@@ -312,7 +303,7 @@ void codeHuffmanX8(FILE *in, FileBit *out){
         length = longueur(traduc[c]);
         for (i = 0; i < length; ++i){
                             /* 0 ou 1 */
-            fEcrireBit(out, abs('0' - traduc[c][i]));
+            fEcrireBit(out, (traduc[c][i] - '0'));
         }
     }
 

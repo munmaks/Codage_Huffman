@@ -24,7 +24,7 @@ typedef struct {
  * @brief Ouvre un fichier en lecture/Ecriture bit a bit
  * @return 1 si OK et 0 sinon
 */
-int fBitopen(FileBit *f, const char *path, const char *mode);
+extern int fBitopen(FileBit *f, const char *path, const char *mode);
 
 
 /**
@@ -34,7 +34,7 @@ int fBitopen(FileBit *f, const char *path, const char *mode);
  * @param f 
  * @param fich 
  */
-void fBitinit(FileBit *f, FILE *fich);
+extern void fBitinit(FileBit *f, FILE *fich);
 
 
 /**
@@ -43,7 +43,7 @@ void fBitinit(FileBit *f, FILE *fich);
  * @param f 
  * @return int 
  */
-int fBitclose(FileBit *f);
+extern int fBitclose(FileBit *f);
 
 
 /**
@@ -54,7 +54,7 @@ int fBitclose(FileBit *f);
  * @param bit 
  * @return int 
  */
-int fEcrireBit(FileBit *f, int bit);
+extern int fEcrireBit(FileBit *f, int bit);
 
 
 /**
@@ -63,7 +63,7 @@ int fEcrireBit(FileBit *f, int bit);
  * @param f 
  * @return int 
  */
-int fLireBit(FileBit *f);
+extern int fLireBit(FileBit *f);
 
 
 /**
@@ -72,7 +72,7 @@ int fLireBit(FileBit *f);
  * @param f 
  * @param n 
  */
-void fEcritCharbin(FileBit *f, unsigned char n);
+extern void fEcritCharbin(FileBit *f, unsigned char n);
 
 
 /**
@@ -81,7 +81,7 @@ void fEcritCharbin(FileBit *f, unsigned char n);
  * @param f 
  * @return unsigned char 
  */
-unsigned char fLireCharbin(FileBit *f);
+extern unsigned char fLireCharbin(FileBit *f);
 
 extern void usage(void);
 

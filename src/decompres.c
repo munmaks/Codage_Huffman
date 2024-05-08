@@ -39,11 +39,10 @@ static int creer_arbre(FileBit *fptr, Arbre *arbre){
 
     if (!fptr) { fprintf(stderr, "Fichier est NULL\n"); return 0; }
 
-
     bit_lu = fLireBit(fptr);
     ++compteur;
 
-    *arbre = alloue_noeud(0); /* pour voir les noeuds internes */
+    *arbre = alloue_noeud(0);    /* pour voir les noeuds internes */
     if (!*arbre) { fprintf(stderr, "Pas de memoire\n"); return 0; }
 
     if ( 1 == bit_lu ){
@@ -184,8 +183,3 @@ int decodage_fichier(char *nom_fichier){
     fBitclose(&fptr);
     return 0;
 }
-
-/*
-gcc -std=c17 -ansi -pedantic -Wno-long-long decompres.c -o decompres
-gcc -std=c17 -ansi -pedantic -Wno-long-long main.c -o main
-*/

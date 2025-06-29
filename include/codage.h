@@ -1,10 +1,10 @@
-#ifndef __HUFFMAN_H__
-#define __HUFFMAN_H__
+#ifndef __CODAGE_H__
+#define __CODAGE_H__
 
 #include "bits_operations.h"
 
 
-typedef struct {
+typedef struct _noeud{
     unsigned char lettre;
     int occur;
     int fg;
@@ -12,7 +12,7 @@ typedef struct {
 } Noeud;
 
 
-typedef struct {
+typedef struct _huffman {
     Noeud *array;
     int nbLeaves;
     int nbNodes;

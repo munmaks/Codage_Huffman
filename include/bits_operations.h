@@ -13,10 +13,10 @@
 #define MAX_SIZE 1024
 
 
-typedef struct {
-    FILE *fich;          /* descripteur du fichier                  */
-    unsigned char stock; /* buffer de 8 bits                        */
-    char nbBit;          /* nombre de bits écrits dans le buffer    */
+typedef struct _file_bit{
+    FILE *fich;         /* descripteur du fichier                  */
+    uint8_t stock;      /* buffer de 8 bits                        */
+    int8_t nbBit;       /* nombre de bits écrits dans le buffer    */
 } FileBit;
 
 
@@ -85,4 +85,4 @@ extern unsigned char fLireCharbin(FileBit *f);
 
 extern void usage(void);
 
-#endif
+#endif /* __BITS_OPERATIONS_H__ */

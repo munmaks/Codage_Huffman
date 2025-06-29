@@ -38,7 +38,9 @@ int main(int argc, char *argv[]){
         /* la suppression d'un fichier binaire */
         if (remove(argv[i])) { fprintf(stderr, "On ne peut pas supprimer le fichier binaire\n"); }
     } else {
+        /*
         usage();
+        */
         codage_res = codage_fichier(argv[1]);
     }
     return codage_res || decodage_res;

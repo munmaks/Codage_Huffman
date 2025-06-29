@@ -58,7 +58,7 @@ int fLireBit(FileBit *f)
         {
             return EOF;
         }
-        f->stock = n;
+        f->stock = (uint8_t)n;
         f->nbBit = 8;
     }
     f->nbBit--;

@@ -1,120 +1,139 @@
-#include "../include/decompres.h"
+#include "decompres.h"
 
-static ll compteur = 0;
+/* (pire cas: 2 * 256 - 1 = 511 noeuds) */
+#define MAX_TREE_NODES (512U)
 
-/****************************************************************/
-/**********     LES FONCTIONS POUR HUFFMAN DECODAGE     *********/
-/****************************************************************/
-
-static Arbre alloue_noeud(char valeur)
+static void alloue_arbre_array(ArbreArray *arbre)
 {
-    Arbre arbre = NULL;
-    if (!(arbre = malloc(sizeof *arbre)))
+    if (!(arbre->nodes = malloc(MAX_TREE_NODES * sizeof(*(arbre->nodes)))))
     {
-        fprintf(stderr, "Pas assez de memoire pour l'arbre\n");
-        return NULL;
-    }
-    arbre->valeur = valeur;
-    arbre->left = arbre->right = NULL;
-    return arbre;
-}
-
-void liberer(Arbre *__restrict__ arbre)
-{
-    if (!*arbre)
+        fprintf(stderr, "Pas assez de memoire pour les noeuds\n");
         return;
-
-    if ((*arbre)->left)
-    {
-        liberer(&(*arbre)->left);
     }
 
-    if ((*arbre)->right)
-    {
-        liberer(&(*arbre)->right);
-    }
-
-    /* suppression du noeud et son nom */
-    free(*arbre);
-    *arbre = NULL;
+    arbre->capacity = MAX_TREE_NODES;
+    arbre->count = 0U;
+    arbre->root = -1;
 }
 
-static int creer_arbre(FileBit *fptr, Arbre *arbre)
+static void liberer_array(ArbreArray *__restrict__ arbre)
+{
+    if (arbre && arbre->nodes)
+    {
+        free(arbre->nodes);
+    }
+}
+
+static int32_t ajouter_noeud(ArbreArray *arbre, unsigned char valeur)
+{
+    int32_t index = 0U;
+    if (arbre->count >= arbre->capacity)
+    {
+        fprintf(stderr, "Capacité de l'arbre dépassée\n");
+        return -1;
+    }
+
+    index = (int32_t)arbre->count++;
+    arbre->nodes[index].valeur = valeur;
+    arbre->nodes[index].left = -1;
+    arbre->nodes[index].right = -1;
+
+    return index;
+}
+
+static int creer_arbre_array(FileBit *fptr, ArbreArray *arbre, int64_t *compteur)
 {
     unsigned char c = '\0';
     int bit_lu = 0;
-
-    if (!fptr)
+    int left_child = 0, right_child = 0;
+    int32_t node_index = 0;
+    if (!fptr || !arbre)
     {
-        fprintf(stderr, "Fichier est NULL\n");
-        return 0;
+        fprintf(stderr, "Fichier ou arbre est NULL\n");
+        return -1;
     }
 
     bit_lu = fLireBit(fptr);
-    ++compteur;
+    ++(*compteur);
 
-    *arbre = alloue_noeud(0); /* pour voir les noeuds internes */
-    if (!*arbre)
+    node_index = ajouter_noeud(arbre, 0); /* noeud interne par defaut */
+    if (node_index == -1)
     {
         fprintf(stderr, "Pas de memoire\n");
-        return 0;
+        return -1;
     }
 
     if (1 == bit_lu)
     {
-
         c = fLireCharbin(fptr);
-
-        (*arbre)->valeur = c;
-        compteur += 8;
-        return 1;
+        arbre->nodes[node_index].valeur = c;
+        (*compteur) += 8;
+        return node_index;
     }
 
-    return creer_arbre(fptr, &((*arbre)->left)) &&
-           creer_arbre(fptr, &((*arbre)->right));
+    left_child = creer_arbre_array(fptr, arbre, compteur);
+    right_child = creer_arbre_array(fptr, arbre, compteur);
+
+    if (left_child == -1 || right_child == -1)
+    {
+        return -1;
+    }
+
+    arbre->nodes[node_index].left = (int16_t)left_child;
+    arbre->nodes[node_index].right = (int16_t)right_child;
+
+    return node_index;
 }
 
-static void message_decrypte_aux(FileBit *fptr, FILE *out, Arbre arbre, ll nb_chars, int padding)
+static void message_decrypte_aux_array(
+    FileBit *fptr, FILE *out,
+    ArbreArray *arbre, int node_index,
+    int64_t nb_chars, uint8_t padding, int64_t *compteur)
 {
-
     int bit_lu = 0;
-    if (!fptr || !out)
+    NoeudArray *node = NULL;
+    if (!fptr || !out || !arbre || node_index < 0)
     {
-        fprintf(stderr, "fptr ou out est null\n");
+        fprintf(stderr, "Paramètres invalides\n");
         return;
     }
 
-    if (arbre)
+    node = &arbre->nodes[node_index];
+
+    /* si c'est une feuille */
+    if (node->left == -1 && node->right == -1)
     {
-        if (!arbre->left && !arbre->right)
-        {
-            fprintf(out, "%c", arbre->valeur);
-            return;
-        }
+        fprintf(out, "%c", node->valeur);
+        return;
     }
 
-    if (nb_chars <= compteur + padding)
+    if (nb_chars <= (*compteur) + padding)
+    {
         return;
+    }
 
     bit_lu = fLireBit(fptr);
 
-    if (0 == bit_lu)
-        message_decrypte_aux(fptr, out, arbre->left, nb_chars, padding);
-    else if (1 == bit_lu)
-        message_decrypte_aux(fptr, out, arbre->right, nb_chars, padding);
+    if (0 == bit_lu && node->left != -1)
+        message_decrypte_aux_array(fptr, out, arbre, node->left, nb_chars, padding, compteur);
+    else if (1 == bit_lu && node->right != -1)
+        message_decrypte_aux_array(fptr, out, arbre, node->right, nb_chars, padding, compteur);
     else
     {
-        fprintf(stderr, "Il faut avoir que des 0 ou des 1\n");
+        fprintf(stderr, "Erreur de navigation dans l'arbre\n");
         return;
     }
-    ++compteur; /* global */
+    ++(*compteur);
 }
 
-static void message_decrypte(FileBit *fptr, FILE *out, Arbre arbre, ll nb_chars, int padding)
+static void message_decrypte_array(
+    FileBit *fptr, FILE *out,
+    ArbreArray *arbre, int64_t nb_chars,
+    uint8_t padding, int64_t *compteur)
 {
     int bit_lu = 0;
-
-    if (!fptr || !arbre || !out)
+    NoeudArray *root_node = NULL;
+    if (!fptr || !arbre || !out || arbre->root == -1)
     {
         fprintf(stderr, "Fichiers ou arbre est null\n");
         return;
@@ -122,80 +141,67 @@ static void message_decrypte(FileBit *fptr, FILE *out, Arbre arbre, ll nb_chars,
 
     while ((bit_lu = fLireBit(fptr)) != EOF)
     {
-        if (nb_chars <= compteur + padding)
+        if (nb_chars <= (*compteur) + padding)
             return;
 
-        if (0 == bit_lu)
-            message_decrypte_aux(fptr, out, arbre->left, nb_chars, padding);
-        else if (1 == bit_lu)
-            message_decrypte_aux(fptr, out, arbre->right, nb_chars, padding);
+        root_node = &arbre->nodes[arbre->root];
+
+        if (0 == bit_lu && root_node->left != -1)
+            message_decrypte_aux_array(fptr, out, arbre, root_node->left, nb_chars, padding, compteur);
+        else if (1 == bit_lu && root_node->right != -1)
+            message_decrypte_aux_array(fptr, out, arbre, root_node->right, nb_chars, padding, compteur);
         else
         {
-            fprintf(stderr, "Il faut avoir que des 0 ou des 1\n");
+            fprintf(stderr, "Erreur de navigation dans l'arbre\n");
             return;
         }
-        ++compteur; /* global */
+        ++(*compteur);
     }
 }
 
-Arbre decompression(FileBit *fptr, FILE *out)
+static void decompression_array(ArbreArray *__restrict__ arbre, FileBit *fptr, FILE *out)
 {
-    int i = 0, padding = 0;
-    int bit_lu = 0;
-    int multiply = 4;
+    int64_t compteur = 0L, nb_chars = 0L;
+    uint8_t padding = 0U, i = 0U, multiply = 4U;
 
-    ll nb_chars = 0;
-    Arbre arbre = NULL;
     if (!fptr || !out)
     {
-        fprintf(stderr, "fichier est null\n");
-        return NULL;
+        fprintf(stderr, "fichier / out / arbre est null\n");
+        return;
     }
+    alloue_arbre_array(arbre);
 
-    fseek(fptr->fich, 0, SEEK_END); /* le curseur a la fin */
+    fseek(fptr->fich, 0, SEEK_END);
     nb_chars = ftell(fptr->fich) * 8;
     fseek(fptr->fich, 0, SEEK_SET);
 
-    for (i = 0; i < 3; ++i)
+    for (i = 0U; i < 3U; ++i)
     {
-        bit_lu = fLireBit(fptr);
-
-        if (bit_lu != 0 && bit_lu != 1)
-        {
-            fprintf(stderr, "Erreur, padding doit etre entre 0 et 7, padding: %d\n", padding);
-            return NULL;
-        }
-
-        padding += bit_lu * multiply;
-        multiply >>= 1; /* {4, 2, 1} */
-
-        ++compteur; /* global */
+        padding += (uint8_t)(fLireBit(fptr) * multiply);
+        multiply >>= 1;
+        ++compteur;
     }
 
-    /* lire chaque bit */
-    if (!creer_arbre(fptr, &arbre))
+    if ((arbre->root = creer_arbre_array(fptr, arbre, &compteur)) == -1)
     {
         fprintf(stderr, "On n'a pas cree arbre de fichier\n");
-        return NULL;
+        liberer_array(arbre);
+        return;
     }
-    /*
-    fprintf(stderr, "padding: %d\n", padding);
-    fprintf(stderr, "nb: %lld \n", nb_chars);
-    fprintf(stderr, "compteur: %llu \n", compteur);
-    */
-    message_decrypte(fptr, out, arbre, nb_chars, padding);
+
+    message_decrypte_array(fptr, out, arbre, nb_chars, padding, &compteur);
+
     for (i = 0; i < padding; ++i)
     {
         fLireBit(fptr);
     }
-    return arbre;
 }
 
-int decodage_fichier(char *nom_fichier)
+extern int decodage_fichier(const char *__restrict__ nom_fichier)
 {
     FileBit fptr = {NULL, 0, 0};
+    ArbreArray arbre = {NULL, 0, 0, -1};
     FILE *out = NULL;
-    Arbre arbre = NULL;
 
     if (!fBitopen(&fptr, nom_fichier, "r"))
     {
@@ -204,17 +210,17 @@ int decodage_fichier(char *nom_fichier)
     }
 
     if (!(out = fopen("resultat.DEC", "w")))
-    { /* to improve with the user's name */
+    {
         fprintf(stderr, "Le fichier %s n'est pas ouvert\n", "out.DEC");
         fBitclose(&fptr);
         return 1;
     }
 
-    arbre = decompression(&fptr, out);
+    decompression_array(&arbre, &fptr, out);
 
-    if (arbre)
+    if (arbre.nodes)
     {
-        liberer(&arbre);
+        liberer_array(&arbre);
     }
 
     fclose(out);

@@ -1,5 +1,5 @@
-#include "../include/codage.h"
-#include "../include/decompres.h"
+#include "codage.h"
+#include "decompres.h"
 
 /*
 Vous pouvez utiliser votre fichier text au lieu de crime-et-chatiment.txt

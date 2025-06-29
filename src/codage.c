@@ -3,7 +3,8 @@
 static __inline__ int longueur(const char *mot)
 {
     int i = 0;
-    while (*mot && i < NBLETTRES - 1){
+    while (*mot && i < NBLETTRES)
+    {
         ++i;
         ++mot;
     }
@@ -16,11 +17,12 @@ static __inline__ int est_alpha(unsigned char ch)
             ('A' <= ch && ch <= 'Z'));
 }
 
+/*
 static void affiche_code(char traduc[][NBLETTRES])
 {
     uint8_t count = 0;
-    unsigned char c = 0;
-    for (c = 0; c < NBLETTRES-1; ++c)
+    unsigned short c = 0;
+    for (c = 0; c < NBLETTRES; ++c)
         if (longueur(traduc[c]) > 0)
         {
             printf("<%d> %c: %s \n", c, c, traduc[c]);
@@ -30,29 +32,15 @@ static void affiche_code(char traduc[][NBLETTRES])
     printf("Nombre de noeuds: %d\n", count + count - 1);
 }
 
-/*
 static void affiche_huffman(Huffman *huffman)
 {
-    int i = 0;
+    uint32_t i = 0U;
     for (; i < huffman->nbNodes; ++i)
     {
         printf("lettre: %c, occur: %d, fg: %d, fd: %d\n",
                huffman->array[i].lettre, huffman->array[i].occur,
                huffman->array[i].fg, huffman->array[i].fd);
     }
-}
-*/
-
-
-/*
-static __inline__ void destroy_traduc(char **traduc)
-{
-    int i = 0;
-    if (!traduc)
-        return;
-    for (i = 0; i < NBLETTRES; ++i)
-        free(traduc[i]);
-    free(traduc);
 }
 */
 
@@ -64,9 +52,9 @@ static __inline__ void destroy_huffman(Huffman *huffman)
     }
 }
 
-static void stockeOccurrences(FILE *fptr, int *array)
+static void stockeOccurrences(FILE *fptr, int32_t *array)
 {
-    int c;
+    int c = 0;
     do
     {
         c = fgetc(fptr);
@@ -75,14 +63,14 @@ static void stockeOccurrences(FILE *fptr, int *array)
             break;
         }
 
-        (array[c])++;
+        ++array[c];
 
     } while (1);
 }
 
-static __inline__ int compteLettres(int *array)
+static __inline__ uint32_t compteLettres(int32_t *array)
 {
-    int count = 0, i = 0;
+    uint32_t count = 0, i = 0;
     for (i = 0; i < NBLETTRES; ++i)
         if (array[i])
             ++count;
@@ -90,51 +78,38 @@ static __inline__ int compteLettres(int *array)
     return count;
 }
 
-static void initHuffman(Huffman *huffman, int *tab, int len)
+static void initHuffman(Huffman *huffman, int32_t tab[], uint32_t len)
 {
-    int cmpt = 0;
-    int i = 0;
-    /*
-    Huffman *huffman = malloc(sizeof *huffman);
-    if (!huffman)
-    {
-        return NULL;
-    }
-    */
-    huffman->array = malloc((2 * len - 1) * sizeof *(huffman->array));
-    if (!huffman->array)
+    int counter = 0;
+    uint16_t i = 0;
+    /* malloc((len * 2 - 1) * 16) */
+    if (!(huffman->array = malloc(((len << 1) - 1) * (sizeof(*huffman->array)))))
     {
         return;
-        /*
-        free(huffman);
-        return NULL;
-        */
     }
 
     for (i = 0; i < NBLETTRES; ++i)
     {
         if (tab[i])
         {
-            huffman->array[cmpt].lettre = i;
-            huffman->array[cmpt].occur = tab[i];
-            huffman->array[cmpt].fg = -1;
-            huffman->array[cmpt].fd = -1;
-            ++cmpt;
+            huffman->array[counter].lettre = (uint8_t)i;
+            huffman->array[counter].occur = tab[i];
+            huffman->array[counter].fg = -1;
+            huffman->array[counter].fd = -1;
+            ++counter;
         }
     }
 
-    huffman->nbLeaves = len;
     huffman->nbNodes = len;
-    huffman->nextLeaf = 0;
+    huffman->nbLeaves = len;
+    huffman->nextLeaf = 0U;
     huffman->nextInternal = len;
-
-    /* return huffman; */
 }
 
 static int cmpfunc(const void *a, const void *b)
 {
-    Noeud *left = (Noeud *)a;
-    Noeud *right = (Noeud *)b;
+    const Noeud *left = (const Noeud *)a;
+    const Noeud *right = (const Noeud *)b;
 
     if ((left->occur == right->occur) && (left->occur))
     {
@@ -143,18 +118,16 @@ static int cmpfunc(const void *a, const void *b)
     return left->occur - right->occur;
 }
 
-static void tri(Noeud *array, int len) { qsort(array, len, sizeof *array, cmpfunc); }
+static void tri(Noeud *array, size_t len) { qsort(array, len, sizeof *array, cmpfunc); }
 
-static int minNode(Huffman *huffman)
+static uint32_t minNode(Huffman *huffman)
 {
-
     if (huffman->nextLeaf >= huffman->nbLeaves)
         return (huffman->nextInternal)++;
 
     if (huffman->nextInternal >= huffman->nbNodes)
         return (huffman->nextLeaf)++;
 
-    /* Comparaison des occurences des noeuds */
     if ((huffman->array[huffman->nextLeaf].occur <=
          huffman->array[huffman->nextInternal].occur))
         return (huffman->nextLeaf)++;
@@ -164,20 +137,22 @@ static int minNode(Huffman *huffman)
 
 static void augmenteArbre(Huffman *huffman)
 {
-    int first = 0, second = 0;
+    uint32_t first = 0, second = 0;
 
     Noeud parent;
 
     if (!huffman)
+    {
         return;
+    }
 
     first = minNode(huffman);
     second = minNode(huffman);
 
-    parent.lettre = -1;
+    parent.lettre = 0;
     parent.occur = huffman->array[first].occur + huffman->array[second].occur;
-    parent.fg = first;
-    parent.fd = second;
+    parent.fg = (int32_t)first;
+    parent.fd = (int32_t)second;
 
     huffman->array[huffman->nbNodes] = parent;
     (huffman->nbNodes)++;
@@ -185,9 +160,8 @@ static void augmenteArbre(Huffman *huffman)
 
 static void huffmanTree(Huffman *huffman, FILE *fptr)
 {
-    int array[NBLETTRES] = {0};
-    int nb = 0;
-    // Huffman huffman = {NULL, 0, 0, 0, 0};
+    int32_t array[NBLETTRES] = {0};
+    uint32_t nb = 0;
     if (!fptr)
     {
         return;
@@ -199,17 +173,18 @@ static void huffmanTree(Huffman *huffman, FILE *fptr)
 
     initHuffman(huffman, array, nb);
 
-    tri(huffman->array, huffman->nbNodes);
+    tri(huffman->array, (size_t)huffman->nbNodes);
 
     while (huffman->nbNodes < (nb * 2) - 1)
     {
         augmenteArbre(huffman);
     }
 
-    /* return huffman; */
+    /* affiche_huffman(huffman); */
 }
 
-static void construit_aux(Noeud *array, char traduc[NBLETTRES][NBLETTRES], char buffer[], int profondeur, int indice)
+static void construit_aux(Noeud *array, char traduc[NBLETTRES][NBLETTRES],
+                          char buffer[], int32_t profondeur, int32_t indice)
 {
     if (array[indice].fg != -1)
     {
@@ -236,48 +211,21 @@ static void construit_aux(Noeud *array, char traduc[NBLETTRES][NBLETTRES], char 
     }
 }
 
-static void construitCode(Huffman *huffman, char traduc[NBLETTRES][NBLETTRES])
+static void construitCode(Huffman *huffman, char traduc[][NBLETTRES])
 {
-    int i = 0;
-    /* int j = 0; */
-    /* char **traduc = NULL; */
+    uint16_t i = 0;
     char buffer[NBLETTRES];
     if (!huffman)
     {
         fprintf(stderr, "Huffman est NULL\n");
         return;
     }
-    /*
-    traduc = malloc(NBLETTRES * (sizeof(*traduc)));
-    */
-    fprintf(stderr, "sizeof(*traduc): %lu\n", sizeof(*traduc));
-    /*
-    if (!traduc)
-    {
-        return 0;
-    }
-    */
-    /*
-    for (i = 0; i < NBLETTRES; ++i)
-    {
-        traduc[i] = malloc(huffman->nbNodes * sizeof *(traduc + i));
-        if (!traduc[i])
-        {
-            for (j = 0; j < i; ++j)
-                free(traduc[j]);
-            free(traduc);
-            return NULL;
-        }
-    }
-    */
-
-    for (i = 0; i < NBLETTRES; ++i)
+    for (; i < NBLETTRES; ++i)
     {
         traduc[i][0] = '\0';
     }
 
-    construit_aux(huffman->array, traduc, buffer, 0, huffman->nbNodes - 1);
-    /* return traduc; */
+    construit_aux(huffman->array, traduc, buffer, 0, (int32_t)(huffman->nbNodes - 1));
 }
 
 static int compteur_bits(Huffman *huffman, int indice)
@@ -288,8 +236,8 @@ static int compteur_bits(Huffman *huffman, int indice)
         fprintf(stderr, "huffman est null\n");
         return 0;
     }
-    if (0 <= indice && indice < huffman->nbLeaves)
-        return 9; /*1 + 8, comme: 1['a']*/
+    if (0 <= indice && indice < (int32_t)huffman->nbLeaves)
+        return 9; /* 1 + 8, comme: 1['a'] */
 
     left = compteur_bits(huffman, huffman->array[indice].fg);
     right = compteur_bits(huffman, huffman->array[indice].fd);
@@ -306,7 +254,7 @@ static void codeHuffmanX8_aux(Huffman *huffman, FileBit *out, int indice)
     }
 
     /* si on est des feuilles */
-    if (0 <= indice && indice < huffman->nbLeaves)
+    if (0 <= indice && indice < (int32_t)huffman->nbLeaves)
     {
         fEcrireBit(out, 1);
         fEcritCharbin(out, huffman->array[indice].lettre);
@@ -322,20 +270,14 @@ static void codeHuffmanX8_aux(Huffman *huffman, FileBit *out, int indice)
     codeHuffmanX8_aux(huffman, out, right);
 }
 
-void codeHuffmanX8(FILE *in, FileBit *out)
+static void codeHuffmanX8(FILE *in, FileBit *out)
 {
     int i = 0, bit = 0;
-    Huffman huffman = {
-        .array = NULL,
-        .nbNodes = 0,
-        .nbLeaves = 0,
-        .nextLeaf = 0,
-        .nextInternal = 0
-    };
-    char traduc[NBLETTRES][NBLETTRES];
     int c = 0;
     int nb_bits = 0, padding = 0, message = 0;
     int length = 0;
+    Huffman huffman = {NULL, 0, 0, 0, 0};
+    char traduc[NBLETTRES][NBLETTRES] = {{0}};
 
     if (!in || !out)
     {
@@ -344,29 +286,10 @@ void codeHuffmanX8(FILE *in, FileBit *out)
     }
 
     huffmanTree(&huffman, in);
-    
-    /*
-    if (!huffman)
-    {
-        fprintf(stderr, "Input est incorrect, huffman n'est pas construit\n");
-        return;
-    }
-    */
 
     construitCode(&huffman, traduc);
-    /* traduc = construitCode(huffman);*/
 
-    
-    affiche_code(traduc);
-    
-    /*
-    if (!traduc)
-    {
-        fprintf(stderr, "Pas assez de memoire pour codage\n");
-        destroy_huffman(huffman);
-        return;
-    }
-    */
+    /* affiche_code(traduc); */
 
     /* compter le nombre de bits dans message */
     fseek(in, 0, SEEK_SET);
@@ -376,11 +299,10 @@ void codeHuffmanX8(FILE *in, FileBit *out)
     }
 
     /* nombre de bits total:
-    3 bits de padding,
-    n bits arbre huffman,
-    m bits message
-    */
-    nb_bits = 3 + compteur_bits(&huffman, huffman.nbNodes - 1) + message;
+       3 bits de padding,
+       n bits arbre huffman,
+       m bits message */
+    nb_bits = 3 + compteur_bits(&huffman, (int32_t)(huffman.nbNodes - 1)) + message;
 
     /* quantite de chiffres a la fin pour obtenir modulo 8*/
     padding = (8 - (nb_bits % 8)) % 8;
@@ -389,11 +311,11 @@ void codeHuffmanX8(FILE *in, FileBit *out)
     for (i = 0; i < 3; ++i)
     {
         /* decalage a gauche i bits , i = {0, 1, 2} */
-        bit = (padding & (4 >> i)) ? (1) : (0);
+        bit = (padding >> (2 - i)) & 1;
         fEcrireBit(out, bit);
     }
 
-    codeHuffmanX8_aux(&huffman, out, huffman.nbNodes - 1);
+    codeHuffmanX8_aux(&huffman, out, (int32_t)huffman.nbNodes - 1);
 
     /* le message chiffre */
     fseek(in, 0, SEEK_SET);
@@ -445,7 +367,3 @@ int codage_fichier(char *nom_fichier)
         fprintf(stderr, "N'a pas reussi a fermer le fichier out\n");
     return 0;
 }
-
-
-
-

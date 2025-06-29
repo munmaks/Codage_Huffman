@@ -3,40 +3,28 @@
 
 #include "bits_operations.h"
 
-typedef int64_t ll;
-typedef uint64_t ull;
+typedef struct _noeud_array
+{
+    uint8_t valeur; /* la lettre de 0 a 255 */
+    int16_t left;   /* index of left child (-1 if none) */
+    int16_t right;  /* index of right child (-1 if none) */
+} NoeudArray;
 
-typedef struct _arbre{
-    struct _arbre *left;    /* fils gauche */
-    struct _arbre *right;   /* fils droite */
-    unsigned char valeur;   /* la lettre de 0 a 255 */
-} *Arbre;
-
-/**
- * @brief liberer la memoire allouee
- * 
- * @param arbre 
- */
-extern void liberer(Arbre * __restrict__ arbre);
-
-/**
- * @brief effectue la decompression d'un fichier binaire
- * passe en parametre
- * 
- * @param fptr 
- * @param out 
- * @return Arbre 
- */
-extern Arbre decompression(FileBit *fptr, FILE *out);
+typedef struct _arbre_array
+{
+    NoeudArray *nodes; /* array of nodes */
+    uint32_t capacity; /* total capacity */
+    uint32_t count;    /* current number of nodes */
+    int32_t root;      /* index of root node */
+} ArbreArray;
 
 /**
  * @brief effectue l'appelle de tous les fonctions necessaires
  * pour decoder le fichier binaire
- * 
- * @param argc 
- * @param nom_fichier 
+ *
+ * @param nom_fichier le nom du fichier binaire
  * @return int 0 si OK, 1 sinon
  */
-extern int decodage_fichier(char *nom_fichier);
+extern int decodage_fichier(const char *__restrict__ nom_fichier);
 
 #endif

@@ -189,7 +189,7 @@ static char **construitCode(Huffman *huffman){
     for (i = 0; i < NBLETTRES; ++i){
         traduc[i] = malloc(huffman->nbNodes * sizeof *(traduc + i) );
         if (!traduc[i]){    /* si une fois echouee, alors on libere tout */
-            for (j = 0; j < i; ++i) 
+            for (j = 0; j < i; ++j) 
                 free(traduc[j]);
             free(traduc);
             return NULL;
